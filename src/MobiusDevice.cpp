@@ -201,6 +201,13 @@ bool MobiusDevice::connect() {
             _service = remoteService;
             ESP_LOGD(LOG_TAG, "- Connected successfully to %s", addressString.c_str());
             MobiusDevice::_listener->onEvent(MobiusDeviceEvent::connection_successful);
+            //Adding the BLE device Information
+            BLERemoteService* remoteServiceDevInfo = client->getService(Mobius::DEVICE_INFO);
+            Serial.println("Got Device Info...");
+            if (remoteServiceDevInfo != nullptr) {
+              _devInfo = remoteServiceDevInfo;
+               ESP_LOGD(LOG_TAG, "- Collected Device Info successfully to %s", addressString.c_str());
+            }
         } else {
             ESP_LOGW(LOG_TAG, "- Failed to connect to characteristics");
             MobiusDevice::_listener->onEvent(MobiusDeviceEvent::connection_failure);
@@ -223,6 +230,7 @@ void MobiusDevice::disconnect() {
         // and destroying a service destroys the characteristics
         _client = nullptr;
         _service = nullptr;
+        _devInfo = nullptr;
         _requestCharacteristic = nullptr;
         _responseCharacteristic1 = nullptr;
         _responseCharacteristic2 = nullptr;
@@ -559,4 +567,33 @@ bool MobiusDevice::responseSuccessful(uint8_t* request, uint16_t reqSize, uint8_
         MobiusDevice::_listener->onEvent(MobiusDeviceEvent::response_failure);
     }
     return responseSuccessful;
+}
+
+/*!
+ * @brief Get the Device Info Characterist UUID.
+ *
+ * Query the device for one of the Device Info UUIDs.
+ *
+ *   |                 uuid                 |        name        |
+ *   |--------------------------------------|--------------------|
+ *   | 00002a23-0000-1000-8000-00805f9b34fb | System ID          |
+ *   | 00002a24-0000-1000-8000-00805f9b34fb | Model Number       |
+ *   | 00002a25-0000-1000-8000-00805f9b34fb | Serial Number      |
+ *   | 00002a26-0000-1000-8000-00805f9b34fb | Firmware Revision  |
+ *   | 00002a27-0000-1000-8000-00805f9b34fb | Hardware Revision  |
+ *   | 00002a28-0000-1000-8000-00805f9b34fb | Software Revision  |
+ *   | 00002a29-0000-1000-8000-00805f9b34fb | Manufacturer Name  |
+ *
+ * @return string
+ */
+std::string MobiusDevice::getDeviceInfo(NimBLEUUID responseCharacteristic) {
+
+  std::string value;
+
+  NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(responseCharacteristic);
+  if (pCharacteristic != nullptr) {
+      value = pCharacteristic->readValue();
+  }
+  
+  return value;
 }

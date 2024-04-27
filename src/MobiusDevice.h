@@ -17,7 +17,8 @@
  */
 namespace Mobius {
     static const BLEUUID GENERAL_SERVICE("01ff0100-ba5e-f4ee-5ca1-eb1e5e4b1ce0");
-    
+    static const BLEUUID DEVICE_INFO(    "0000180a-0000-1000-8000-00805f9b34fb");
+
     static const BLEUUID REQUEST_CHARACTERISTIC(   "01ff0104-ba5e-f4ee-5ca1-eb1e5e4b1ce0");//TX_FINAL
     static const BLEUUID RESPONSE_CHARACTERISTIC_2("01ff0102-ba5e-f4ee-5ca1-eb1e5e4b1ce0");//RX_FINAL
     static const BLEUUID RESPONSE_CHARACTERISTIC_1("01ff0101-ba5e-f4ee-5ca1-eb1e5e4b1ce0");//RX_DATA
@@ -141,6 +142,18 @@ public:
      */
     bool runSchedule();
 
+    BLEAdvertisedDevice* _device;
+    BLERemoteService* _service;
+
+    /*!
+     * @brief Get the currently running scene.
+     * 
+     * Query the device to determine the currently running scene.
+     * Or 65535 (-1) if a failure occurs.
+     * 
+     * @return a uint16_t
+     */
+    std::string getDeviceInfo(NimBLEUUID responseCharacteristic);
 
 private:
     static MobiusDeviceEventListener* _listener;
@@ -181,9 +194,10 @@ private:
     };
 
 
-    BLEAdvertisedDevice* _device;
+//    BLEAdvertisedDevice* _device;
     BLEClient* _client;
-    BLERemoteService* _service;
+//    BLERemoteService* _service;
+    BLERemoteService* _devInfo;
     BLERemoteCharacteristic* _requestCharacteristic;  //TX_FINAL
     BLERemoteCharacteristic* _responseCharacteristic1;//RX_DATA
     BLERemoteCharacteristic* _responseCharacteristic2;//RX_FINAL
