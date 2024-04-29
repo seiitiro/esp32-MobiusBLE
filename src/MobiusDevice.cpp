@@ -597,3 +597,91 @@ std::string MobiusDevice::getDeviceInfo(NimBLEUUID responseCharacteristic) {
   
   return value;
 }
+
+/*!
+ * @brief Get the Device Serial Number from the Manufactures Info output, as this info isn't always available on BLE Device Info.
+ *
+ * Query the device for one of the Device Info UUIDs.
+ *
+ *   |                 uuid                 |        name        |
+ *   |--------------------------------------|--------------------|
+ *   | 00002a25-0000-1000-8000-00805f9b34fb | Serial Number      |
+ *
+ * @return string
+ */
+std::string MobiusDevice::getSerialNumber() {
+  std::string value;
+
+  //Try to get Serial from Device information
+  NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(NimBLEUUID("00002a25-0000-1000-8000-00805f9b34fb"));
+  if (pCharacteristic != nullptr) {
+      value = pCharacteristic->readValue();
+  }
+/*
+  Serial.println("Size is: ");
+  Serial.println(value.length());
+*/
+  if (value.length() == 0) {
+    //If no Serial from Device Info, try to get it from Manufacturer data
+    if (_device->haveManufacturerData()) {
+      std::string manuData = _device->getManufacturerData();
+
+      // serialNumber is from byte 11
+      value = manuData.substr(11, manuData.length());
+    }
+  }
+
+  return value;  
+}
+
+/*!
+ * @brief Get the Device Model Number.
+ *
+ * @return string
+ */
+std::string MobiusDevice::getModelNum() {
+  std::string value;
+
+  //Try to get Serial from Device information
+  NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(NimBLEUUID("00002a24-0000-1000-8000-00805f9b34fb"));
+  if (pCharacteristic != nullptr) {
+      value = pCharacteristic->readValue();
+  }
+
+  return value;  
+}
+
+/*!
+ * @brief Get the Device Model Number.
+ *
+ * @return string
+ */
+std::string MobiusDevice::getFWRev() {
+  std::string value;
+
+  //Try to get Serial from Device information
+  NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(NimBLEUUID("00002a26-0000-1000-8000-00805f9b34fb"));
+  if (pCharacteristic != nullptr) {
+      value = pCharacteristic->readValue();
+  }
+
+  return value;  
+}
+
+         
+/*!
+ * @brief Get the Device Model Number.
+ *
+ * @return string
+ */
+std::string MobiusDevice::getManufName() {
+  std::string value;
+
+  //Try to get Serial from Device information
+  NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(NimBLEUUID("00002a29-0000-1000-8000-00805f9b34fb"));
+  if (pCharacteristic != nullptr) {
+      value = pCharacteristic->readValue();
+  }
+
+  return value;  
+}

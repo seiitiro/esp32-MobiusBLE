@@ -154,6 +154,10 @@ public:
      * @return a uint16_t
      */
     std::string getDeviceInfo(NimBLEUUID responseCharacteristic);
+    std::string getSerialNumber();
+    std::string getModelNum();
+    std::string getFWRev();
+    std::string getManufName();
 
 private:
     static MobiusDeviceEventListener* _listener;
