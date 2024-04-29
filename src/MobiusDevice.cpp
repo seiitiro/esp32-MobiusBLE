@@ -639,16 +639,16 @@ std::string MobiusDevice::getSerialNumber() {
  *
  * @return string
  */
-char* MobiusDevice::getModelNum() {
-  const char* valueModel;
+std::string  MobiusDevice::getModelNum() {
+  std::string valueModel;
 
   //Try to get Serial from Device information
   NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(NimBLEUUID("00002a24-0000-1000-8000-00805f9b34fb"));
   if (pCharacteristic != nullptr) {
-    valueModel = pCharacteristic->readValue().c_str();
+    valueModel = pCharacteristic->readValue();
   }
 
-  return const_cast<char*>(valueModel);
+  return valueModel;
 }
 
 /*!
@@ -656,16 +656,16 @@ char* MobiusDevice::getModelNum() {
  *
  * @return string
  */
-char* MobiusDevice::getFWRev() {
-  const char* valueFW;
+std::string  MobiusDevice::getFWRev() {
+  std::string valueFW;
 
   //Try to get Serial from Device information
   NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(NimBLEUUID("00002a26-0000-1000-8000-00805f9b34fb"));
   if (pCharacteristic != nullptr) {
-    valueFW = pCharacteristic->readValue().c_str();
+    valueFW = pCharacteristic->readValue();
   }
 
-  return const_cast<char*>(valueFW);
+  return valueFW;
 }
 
 /*!
@@ -673,14 +673,14 @@ char* MobiusDevice::getFWRev() {
  *
  * @return string
  */
-char* MobiusDevice::getManufName() {
-  const char* valueManufac;
+std::string  MobiusDevice::getManufName() {
+  std::string  valueManufac;
 
   //Try to get Serial from Device information
   NimBLERemoteCharacteristic *pCharacteristic = _devInfo->getCharacteristic(NimBLEUUID("00002a29-0000-1000-8000-00805f9b34fb"));
   if (pCharacteristic != nullptr) {
-    valueManufac = pCharacteristic->readValue().c_str();
+    valueManufac = pCharacteristic->readValue();
   }
 
-  return const_cast<char*>(valueManufac);  
+  return valueManufac;  
 }
