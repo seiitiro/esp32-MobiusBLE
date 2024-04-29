@@ -17,8 +17,8 @@
  * Work in progress
  */
 #include <esp_log.h>
-#include "./src/ESP32_MobiusBLE.h"
-#include "./src/ArduinoSerialDeviceEventListener.h"
+#include <ESP32_MobiusBLE.h>
+#include "ArduinoSerialDeviceEventListener.h"
 #include <AntiDelay.h>
 #include <string>
 #include "MobiusSerialDecoder.h"
@@ -56,7 +56,7 @@ void loop() {
     //Run Mobius routine every x minutes defined below in [float minutes = ]
     if (!scanMobius.isRunning()){
       //Now that the scan has started on boot, set the timer so re-scan runs every 2 minutes
-      float minutes = 5;
+      float minutes = 2;
       scanMobius.setInterval(minutes*60000);
     }
 
@@ -103,31 +103,20 @@ void loop() {
           
           ESP_LOGD(LOG_TAG, "Current scene string:%s\n", sceneString);
 
-          char* modelNumber = getModelName(device.getSerialNumber());
-          const char* fwRev = device.getFWRev().c_str();
-          const char* Manufa = device.getManufName().c_str();
-          const char* serialNumber = device.getSerialNumber().c_str();
 
-          Serial.print("Model Number: ");
-          Serial.println(modelNumber);
+          char* serialNumber = const_cast<char*>(device.getSerialNumber().c_str());
 
           Serial.print("Serial #: ");
           Serial.println(serialNumber);
 
+          Serial.print("Model Name: ");
+          Serial.println(getModelName(device.getSerialNumber()));
+
           Serial.print("FW Revision: ");
-          Serial.println(fwRev);
+          Serial.println(device.getFWRev());
 
           Serial.print("Manufacturer: ");
-          Serial.println(Manufa);
-
-          std::string jsonTest = createDeviceJson((char*) serialNumber, (char*) Manufa, (char*) modelNumber, (char*) fwRev );
-
-          Serial.println("\n======== JSON DATA ===========\n");
-          Serial.println(jsonTest.c_str());
-
-					// delaying without sleeping
-					unsigned long startMillis = millis();
-					while (1000 > (millis() - startMillis)) {}
+          Serial.println(device.getManufName());
 
           device.disconnect();
 
@@ -153,46 +142,3 @@ void loop() {
     ESP_LOGI(LOG_TAG, "Waiting for next run in 2 minutes....");
   }
 }
-
-/*
- * Function to create the json with device information (bottom part of HA MQTT config message)
-*/
-std::string createDeviceJson(char* serialNum, char* manufac, char* modelNum, char* fwRevision){
-
-  JsonDocument jsonDoc;
-
-  jsonDoc["name"] = nullptr;
-  jsonDoc["unique_id"] = serialNum;
-  jsonDoc["icon"] = "mdi:pump";
-
-  char stateTopic[512];
-  sprintf(stateTopic, "homeassistant/sensor/mobius/%s/scene", serialNum);
-  jsonDoc["state_topic"] = stateTopic;
-
-  jsonDoc["force_update"] = "true";
-
-  JsonObject jsonDevice = jsonDoc["Device"].to<JsonObject>();
-  jsonDevice["identifiers"][0] = serialNum;
-  jsonDevice["name"] = serialNum;
-  jsonDevice["serial_number"] = serialNum;
-  jsonDevice["fw_version"] = fwRevision;
-
-  if (sizeof(modelNum) > 1)
-    jsonDevice["model"] = modelNum;
-  else
-    jsonDevice["model"] = "Mobius";
-
-  if (sizeof(manufac)> 1)
-    jsonDevice["manufacturer"] = manufac;
-  else
-    jsonDevice["manufacturer"] = "Ecotech";
-
-  std::string output;
-
-  jsonDoc.shrinkToFit();  // optional
-
-  serializeJson(jsonDoc, output);
-
-  return output;
-}
-
