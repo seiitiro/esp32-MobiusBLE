@@ -155,9 +155,9 @@ public:
      */
     std::string getDeviceInfo(NimBLEUUID responseCharacteristic);
     std::string getSerialNumber();
-    std::string getModelNum();
-    std::string getFWRev();
-    std::string getManufName();
+    char* getModelNum();
+    char* getFWRev();
+    char* getManufName();
 
 private:
     static MobiusDeviceEventListener* _listener;
