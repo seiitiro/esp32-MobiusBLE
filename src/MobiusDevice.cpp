@@ -45,13 +45,13 @@ std::mutex _responseDataMutex;
 
 /*!
  * @brief Scan for Mobius devices
- * 
+ *
  * Performs a scan for nearby BLEDevices which have are advertising
  * the GENERAL_SERVICE (i.e. the "MOBIUS" service). Any found devices
  * will be added the give 'deviceBuffer'. Once the 'expectedCount' is
  * reached, scanning will cease regardless of how much time is left
  * until 'scanDuration'.
- * 
+ *
  * @param scanDuration maximum scan time (in seconds)
  * @param deviceBuffer buffer to hold all found devices
  * @param expectedCount number of devices expected to be found (default 1)
@@ -84,7 +84,7 @@ uint8_t MobiusDevice::scanForMobiusDevices(uint32_t scanDuration, MobiusDevice* 
 
 /*!
  * @brief Prepares the MobiusDevice class for usage.
- * 
+ *
  * Prepares all internal services and utilities for handling
  * BLE communication with Mobius devices.
  *
@@ -93,14 +93,14 @@ uint8_t MobiusDevice::scanForMobiusDevices(uint32_t scanDuration, MobiusDevice* 
 void MobiusDevice::init(MobiusDeviceEventListener* listener) {
     // initialize the BLE library
     BLEDevice::init("");
-    
+
     // initialize the singleton BLEScan object
     BLEScan* scanner = BLEDevice::getScan();
     scanner->setInterval(1349);
     scanner->setWindow(449);
     scanner->setActiveScan(true);
     scanner->setAdvertisedDeviceCallbacks(new MobiusDeviceScanCallbacks());
-    
+
     // initialize the handler
     if (nullptr == listener) {
         MobiusDevice::_listener = new DefaultDeviceEventListener();
@@ -124,7 +124,7 @@ void MobiusDevice::notifyCallback(BLERemoteCharacteristic* responseCharacteristi
     MobiusDevice::_listener->onEvent(MobiusDeviceEvent::notification_received);
     BLEUUID uuid = responseCharacteristic->getUUID();
     ESP_LOGD(LOG_TAG, "- Received response from characteristic %s", uuid.toString().c_str());
-    
+
     ESP_LOG_BUFFER_HEXDUMP(LOG_TAG, pData, length, ESP_LOG_DEBUG);
     if (uuid.equals(Mobius::RESPONSE_CHARACTERISTIC_2)) {
         // get mutex lock to update response data safely
@@ -151,7 +151,7 @@ void MobiusDevice::notifyCallback(BLERemoteCharacteristic* responseCharacteristi
  */
 MobiusDevice::MobiusDevice() : MobiusDevice::MobiusDevice(nullptr) {}
 /*!
- * Main constructor to build a MobiusDevice for use.  While a public method, 
+ * Main constructor to build a MobiusDevice for use.  While a public method,
  * this should only be used by the MobiusDevice itself.
  */
 MobiusDevice::MobiusDevice(BLEAdvertisedDevice* device) {
@@ -171,10 +171,10 @@ MobiusDevice::~MobiusDevice() {
 
 /*!
  * @brief Connect to the device.
- * 
+ *
  * Connect to the device corresponding to the current BLEAdvertisedDevice and
  * verify it has the required BLE characteristics.
- * 
+ *
  * @return true only if successfully connected
  */
 bool MobiusDevice::connect() {
@@ -186,9 +186,9 @@ bool MobiusDevice::connect() {
     std::string addressString = _device->getAddress().toString();
     ESP_LOGD(LOG_TAG, "- Connecting to %s", addressString.c_str());
     client->connect(_device);
-    
+
     BLERemoteService* remoteService = client->getService(Mobius::GENERAL_SERVICE);
-    
+
     if (nullptr == remoteService) {
         ESP_LOGW(LOG_TAG, "- Failed to find service on %s", addressString.c_str());
         client->disconnect();
@@ -302,7 +302,7 @@ bool MobiusDevice::runSchedule() {
     memcpy(attributes, Mobius::ATTRIBUTE_OPERATION_STATE, attSize);
     // update which state to set
     attributes[attSize-1] = Mobius::OPERATION_STATE_SCHEDULE;
-    
+
     return setData(attributes, attSize);
 }
 
@@ -310,7 +310,7 @@ bool MobiusDevice::runSchedule() {
 
 /*!
  * @brief Connect to relevant characteristics
- * 
+ *
  * Connect to the relevant characteristics on the given BLE service for sending
  * and receiving messages.
  * - REQUEST_CHARACTERISTIC must be found and writable
@@ -348,7 +348,7 @@ bool MobiusDevice::connectToCharacteristics(BLERemoteService* service) {
         uint8_t notificationOn[]={0x01, 0x00};
         _responseCharacteristic2->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue(notificationOn, 2, true);
     }
-    
+
     return hasRequestChar && hasResponseChar1 && hasResponseChar2;
 }
 /*!
@@ -453,12 +453,12 @@ uint8_t* MobiusDevice::sendRequest(uint8_t* request, uint16_t length, uint16_t& 
     // get a copy of the request to write
     uint8_t toSend[length];
     memcpy(toSend, request, length);
-    
+
     // reset the unread flag to avoid reading old data
     _responseDataMutex.lock();
     MobiusDevice::_responseUnread = false;
     _responseDataMutex.unlock();
-    
+
     // do the actual writing to the characteristic
     if (_requestCharacteristic->writeValue(toSend, length)) {
         ESP_LOGD(LOG_TAG, "- data sent successfully");
@@ -474,7 +474,7 @@ uint8_t* MobiusDevice::sendRequest(uint8_t* request, uint16_t length, uint16_t& 
             // busy wait to avoid flooding with read requests and constant locking
             int64_t delayStartMicro = esp_timer_get_time();
             while(readDelay > (esp_timer_get_time() - delayStartMicro)) {}
-            
+
             _responseDataMutex.lock();
             if (MobiusDevice::_responseUnread) {
                 received = true;
@@ -485,7 +485,7 @@ uint8_t* MobiusDevice::sendRequest(uint8_t* request, uint16_t length, uint16_t& 
                 memcpy(response, _responseData, responseSize);
                 // update as read
                 MobiusDevice::_responseUnread = false;
-                
+
                 ESP_LOGD(LOG_TAG, "- response data was received:");
                 ESP_LOG_BUFFER_HEXDUMP(LOG_TAG, response, responseSize, ESP_LOG_DEBUG);
             }
@@ -512,16 +512,16 @@ uint8_t* MobiusDevice::parseResponseData(uint8_t* response, uint16_t length, uin
     isValid = isValid && (0x02 == response[0]);
     isValid = isValid && (Mobius::OP_GROUP_CONFIRM == response[1]);
     if (isValid) {
-        // get the data 
-        dataSize = (response[8] << 8) + (response[7]);
-        // cleanup data and copy the data to be returned
-        delete[] data;
-        data = new uint8_t[dataSize];
-        memcpy(data, &response[9], dataSize);
-        ESP_LOGD(LOG_TAG, "- response data was valid and parsed into:");
-        ESP_LOG_BUFFER_HEXDUMP(LOG_TAG, data, dataSize, ESP_LOG_DEBUG);
+      // get the data
+      dataSize = (response[8] << 8) + (response[7]);
+      // cleanup data and copy the data to be returned
+      delete[] data;
+      data = new uint8_t[dataSize];
+      memcpy(data, &response[9], dataSize);
+      ESP_LOGD(LOG_TAG, "- response data was valid and parsed into:");
+      ESP_LOG_BUFFER_HEXDUMP(LOG_TAG, data, dataSize, ESP_LOG_DEBUG);
     } else {
-        ESP_LOGW(LOG_TAG, "- response data was invalid");
+      ESP_LOGW(LOG_TAG, "- response data was invalid");
     }
     return data;
 }
@@ -594,8 +594,12 @@ std::string MobiusDevice::getDeviceInfo(NimBLEUUID responseCharacteristic) {
   if (pCharacteristic != nullptr) {
       value = pCharacteristic->readValue();
   }
-  
-  return value;
+
+  if (!value.empty()){
+	return value;
+  } else {
+    return "Unknown";
+  }
 }
 
 /*!
@@ -631,7 +635,11 @@ std::string MobiusDevice::getSerialNumber() {
     }
   }
 
-  return valueSerial;  
+  if (!valueSerial.empty()){
+	return valueSerial;
+  } else {
+    return "Unknown";
+  }
 }
 
 /*!
@@ -648,7 +656,11 @@ std::string  MobiusDevice::getModelNum() {
     valueModel = pCharacteristic->readValue();
   }
 
-  return valueModel;
+  if (!valueModel.empty()){
+	return valueModel;
+  } else {
+    return "Unknown";
+  }
 }
 
 /*!
@@ -665,7 +677,11 @@ std::string  MobiusDevice::getFWRev() {
     valueFW = pCharacteristic->readValue();
   }
 
-  return valueFW;
+  if (!valueFW.empty()){
+	return valueFW;
+  } else {
+    return "Unknown";
+  }
 }
 
 /*!
@@ -682,5 +698,9 @@ std::string  MobiusDevice::getManufName() {
     valueManufac = pCharacteristic->readValue();
   }
 
-  return valueManufac;  
+  if (!valueManufac.empty()){
+	return valueManufac;
+  } else {
+    return "Unknown";
+  }
 }
